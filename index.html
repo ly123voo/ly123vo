@@ -64,10 +64,13 @@
         <h1>阿拉来通杀</h1>
         <div class="form-group">
             <input type="text" id="interval" placeholder="循环间隔时间（毫秒）">
-            <input type="text" id="authorization" placeholder="Authorization令牌">
             <input type="number" id="sessionId" placeholder="LootActivitySessionID">
             <input type="number" id="prizeId" placeholder="LootActivitySessionPrizeID">
             <input type="text" id="startTime" placeholder="定时启动时间（格式: HH:MM:SS:SSS）">
+            <div id="authorizationContainer">
+                <input type="text" class="authorization" placeholder="Authorization令牌">
+            </div>
+            <button id="addAuthorizationButton">加一个账户</button>
             <button id="scheduleButton">定时启动</button>
             <button id="startButton">立即抢购</button>
             <button id="stopButton">结束抢购</button>
@@ -82,6 +85,7 @@
         let running = false;
         let responseStats = {};
         let startTimeout;
+        let currentTime = new Date();
 
         async function fetchBeijingTime() {
             try {
@@ -97,6 +101,16 @@
                 console.error('请求错误:', error);
                 return new Date();
             }
+        }
+
+        async function updateLocalTime() {
+            currentTime = await fetchBeijingTime();
+        }
+
+        function updateTimeDisplay() {
+            currentTime.setMilliseconds(currentTime.getMilliseconds() + 500);
+            const timeDisplay = document.getElementById('timeDisplay');
+            timeDisplay.textContent = `北京时间: ${currentTime.toLocaleString('zh-CN', { hour12: false })}`;
         }
 
         async function sendPostRequest(post_url, headers, data) {
@@ -147,59 +161,64 @@
             }
         }
 
-        async function executeRequests(interval, authorization, sessionId, prizeId) {
+        async function executeRequests(interval, authorizations, sessionId, prizeId) {
             if (!running) return;
+
             const post_url = "https://gateway.allxf.top/lootactivityapi/OpenService/v1/Activity/QueueReceiveLootActivity";
-            const post_headers = {
-                "Host": "gateway.allxf.top",
-                "Authorization": authorization,
-                "Content-Type": "application/json;charset=UTF-8",
-                "Referer": "https://m.allxf.top/"
-            };
-            const post_data = {
-                "LootActivitySessionID": sessionId,
-                "LootActivitySessionPrizeID": prizeId,
-                "BeaconVerifyParam": []
-            };
-
             const get_url = "https://gateway.allxf.top/lootactivityapi/OpenService/v1/Activity/GetQueueReceiveLootActivityResult";
-            const get_headers = {
-                "Host": "gateway.allxf.top",
-                "Authorization": authorization,
-                "Content-Type": "application/json;charset=UTF-8",
-                "Accept": "application/json, text/plain, */*"
-            };
 
-            const extracted_string = await sendPostRequest(post_url, post_headers, post_data);
-            if (extracted_string) {
-                const params = { "QueueReceiveKey": `LootActivity:QueueReceive:CachePrefix${extracted_string}` };
-                const get_response = await sendGetRequest(get_url, get_headers, params);
-                if (get_response) {
-                    const timestamp = new Date().toLocaleString('zh-CN', { hour12: false });
-                    const responseWithTime = `${timestamp}\n${get_response}`;
-                    document.getElementById('response').innerHTML = `<pre>${responseWithTime}</pre>`;
-                    addToHistory(responseWithTime);
-                    updateStats(get_response);
+            for (const authorization of authorizations) {
+                const post_headers = {
+                    "Host": "gateway.allxf.top",
+                    "Authorization": authorization,
+                    "Content-Type": "application/json;charset=UTF-8",
+                    "Referer": "https://m.allxf.top/"
+                };
+                const post_data = {
+                    "LootActivitySessionID": sessionId,
+                    "LootActivitySessionPrizeID": prizeId,
+                    "BeaconVerifyParam": []
+                };
+
+                const get_headers = {
+                    "Host": "gateway.allxf.top",
+                    "Authorization": authorization,
+                    "Content-Type": "application/json;charset=UTF-8",
+                    "Accept": "application/json, text/plain, */*"
+                };
+
+                const extracted_string = await sendPostRequest(post_url, post_headers, post_data);
+                if (extracted_string) {
+                    const params = { "QueueReceiveKey": `LootActivity:QueueReceive:CachePrefix${extracted_string}` };
+                    const get_response = await sendGetRequest(get_url, get_headers, params);
+                    if (get_response) {
+                        const timestamp = new Date().toLocaleString('zh-CN', { hour12: false });
+                        const responseWithTime = `${timestamp}\n${get_response}`;
+                        document.getElementById('response').innerHTML = `<pre>${responseWithTime}</pre>`;
+                        addToHistory(responseWithTime);
+                        updateStats(get_response);
+                    }
                 }
             }
-            intervalId = setTimeout(() => executeRequests(interval, authorization, sessionId, prizeId), interval);
+
+            intervalId = setTimeout(() => executeRequests(interval, authorizations, sessionId, prizeId), interval);
         }
 
         function startRequests() {
             if (running) return;
             running = true;
             const interval = parseInt(document.getElementById('interval').value);
-            const authorization = document.getElementById('authorization').value;
+            const authorizations = Array.from(document.getElementsByClassName('authorization')).map(input => input.value);
             const sessionId = parseInt(document.getElementById('sessionId').value);
             const prizeId = parseInt(document.getElementById('prizeId').value);
-            executeRequests(interval, authorization, sessionId, prizeId);
+            executeRequests(interval, authorizations, sessionId, prizeId);
         }
 
         async function scheduleRequests() {
             if (running) return;
             running = true;
             const interval = parseInt(document.getElementById('interval').value);
-            const authorization = document.getElementById('authorization').value;
+            const authorizations = Array.from(document.getElementsByClassName('authorization')).map(input => input.value);
             const sessionId = parseInt(document.getElementById('sessionId').value);
             const prizeId = parseInt(document.getElementById('prizeId').value);
             const startTime = document.getElementById('startTime').value;
@@ -211,7 +230,7 @@
 
             const delay = start - now;
             startTimeout = setTimeout(() => {
-                executeRequests(interval, authorization, sessionId, prizeId);
+                executeRequests(interval, authorizations, sessionId, prizeId);
             }, delay);
         }
 
@@ -246,18 +265,21 @@
             }
         }
 
-        async function updateTimeDisplay() {
-            const time = await fetchBeijingTime();
-            const timeDisplay = document.getElementById('timeDisplay');
-            timeDisplay.textContent = `北京时间: ${time.toLocaleString('zh-CN', { hour12: false })}`;
-        }
-
-        setInterval(updateTimeDisplay, 500);
-        updateTimeDisplay();
+        updateLocalTime();
+        setInterval(updateLocalTime, 60000); // 每分钟从API更新一次时间
+        setInterval(updateTimeDisplay, 500); // 每半秒更新一次本地显示时间
 
         document.getElementById('startButton').addEventListener('click', startRequests);
         document.getElementById('scheduleButton').addEventListener('click', scheduleRequests);
         document.getElementById('stopButton').addEventListener('click', stopRequests);
+        document.getElementById('addAuthorizationButton').addEventListener('click', () => {
+            const container = document.getElementById('authorizationContainer');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'authorization';
+            input.placeholder = 'Authorization令牌';
+            container.appendChild(input);
+        });
     </script>
 </body>
 </html>
