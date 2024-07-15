@@ -252,7 +252,7 @@
             timeDisplay.textContent = `北京时间: ${time.toLocaleString('zh-CN', { hour12: false })}`;
         }
 
-        setInterval(updateTimeDisplay, 1000);
+        setInterval(updateTimeDisplay, 500);
         updateTimeDisplay();
 
         document.getElementById('startButton').addEventListener('click', startRequests);
