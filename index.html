@@ -1,4 +1,4 @@
-<html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -53,6 +53,10 @@
             border: 1px solid #ccc;
             border-radius: 5px;
         }
+        .time-display {
+            margin-top: 10px;
+            font-size: 1.2em;
+        }
     </style>
 </head>
 <body>
@@ -63,13 +67,38 @@
             <input type="text" id="authorization" placeholder="Authorization令牌">
             <input type="number" id="sessionId" placeholder="LootActivitySessionID">
             <input type="number" id="prizeId" placeholder="LootActivitySessionPrizeID">
+            <input type="text" id="startTime" placeholder="定时启动时间（格式: HH:MM:SS:SSS）">
+            <button onclick="scheduleRequests()">定时启动</button>
             <button onclick="startRequests()">开始请求</button>
+            <button onclick="stopRequests()">结束请求</button>
         </div>
         <div id="response" style="margin-top: 20px;"></div>
         <div class="history" id="history"></div>
+        <div class="time-display" id="timeDisplay"></div>
     </div>
 
     <script>
+        let intervalId;
+        let running = false;
+        let responseStats = {};
+        let startTimeout;
+
+        async function fetchBeijingTime() {
+            try {
+                const response = await fetch('https://worldtimeapi.org/api/timezone/Asia/Shanghai');
+                if (response.ok) {
+                    const data = await response.json();
+                    return new Date(data.datetime);
+                } else {
+                    console.error('无法获取北京时间');
+                    return new Date();
+                }
+            } catch (error) {
+                console.error('请求错误:', error);
+                return new Date();
+            }
+        }
+
         async function sendPostRequest(post_url, headers, data) {
             try {
                 const response = await fetch(post_url, {
@@ -118,7 +147,9 @@
             }
         }
 
-        function startRequests() {
+        async function startRequests() {
+            if (running) return;
+            running = true;
             const interval = parseInt(document.getElementById('interval').value);
             const authorization = document.getElementById('authorization').value;
             const sessionId = parseInt(document.getElementById('sessionId').value);
@@ -145,7 +176,8 @@
                 "Accept": "application/json, text/plain, */*"
             };
 
-            setInterval(async () => {
+            async function executeRequests() {
+                if (!running) return;
                 const extracted_string = await sendPostRequest(post_url, post_headers, post_data);
                 if (extracted_string) {
                     const params = { "QueueReceiveKey": `LootActivity:QueueReceive:CachePrefix${extracted_string}` };
@@ -153,22 +185,111 @@
                     if (get_response) {
                         document.getElementById('response').innerHTML = `<pre>${get_response}</pre>`;
                         addToHistory(get_response);
+                        updateStats(get_response);
                     }
                 }
-            }, interval);
+            }
+
+            executeRequests(); // 立即执行第一次请求
+            intervalId = setInterval(executeRequests, interval); // 设定间隔时间后继续请求
+        }
+
+        async function scheduleRequests() {
+            if (running) return;
+            running = true;
+            const interval = parseInt(document.getElementById('interval').value);
+            const authorization = document.getElementById('authorization').value;
+            const sessionId = parseInt(document.getElementById('sessionId').value);
+            const prizeId = parseInt(document.getElementById('prizeId').value);
+            const startTime = document.getElementById('startTime').value;
+
+            const post_url = "https://gateway.allxf.top/lootactivityapi/OpenService/v1/Activity/QueueReceiveLootActivity";
+            const post_headers = {
+                "Host": "gateway.allxf.top",
+                "Authorization": authorization,
+                "Content-Type": "application/json;charset=UTF-8",
+                "Referer": "https://m.allxf.top/"
+            };
+            const post_data = {
+                "LootActivitySessionID": sessionId,
+                "LootActivitySessionPrizeID": prizeId,
+                "BeaconVerifyParam": []
+            };
+
+            const get_url = "https://gateway.allxf.top/lootactivityapi/OpenService/v1/Activity/GetQueueReceiveLootActivityResult";
+            const get_headers = {
+                "Host": "gateway.allxf.top",
+                "Authorization": authorization,
+                "Content-Type": "application/json;charset=UTF-8",
+                "Accept": "application/json, text/plain, */*"
+            };
+
+            async function executeRequests() {
+                if (!running) return;
+                const extracted_string = await sendPostRequest(post_url, post_headers, post_data);
+                if (extracted_string) {
+                    const params = { "QueueReceiveKey": `LootActivity:QueueReceive:CachePrefix${extracted_string}` };
+                    const get_response = await sendGetRequest(get_url, get_headers, params);
+                    if (get_response) {
+                        document.getElementById('response').innerHTML = `<pre>${get_response}</pre>`;
+                        addToHistory(get_response);
+                        updateStats(get_response);
+                    }
+                }
+            }
+
+            const [hours, minutes, seconds, milliseconds] = startTime.split(':').map(Number);
+            const now = await fetchBeijingTime();
+            const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, seconds, milliseconds);
+            if (start < now) start.setDate(start.getDate() + 1);
+
+            const delay = start - now;
+            startTimeout = setTimeout(() => {
+                executeRequests(); // 立即执行第一次请求
+                intervalId = setInterval(executeRequests, interval); // 设定间隔时间后继续请求
+            }, delay);
+        }
+
+        function stopRequests() {
+            running = false;
+            clearInterval(intervalId);
+            clearTimeout(startTimeout);
+            displayStats();
         }
 
         function addToHistory(response) {
             const history = document.getElementById('history');
             const item = document.createElement('div');
-            item.className = 'history-item';
-            item.innerHTML = `请求时间: ${new Date().toLocaleString()}<pre>${response}</pre>`;
+            item.classList.add('history-item');
+            item.innerHTML = `<pre>${response}</pre>`;
             item.onclick = () => {
                 const pre = item.querySelector('pre');
-                pre.style.display = pre.style.display === 'none' ? 'block' : 'none';
+                pre.style.display = pre.style.display === 'block' ? 'none' : 'block';
             };
             history.appendChild(item);
         }
+
+        function updateStats(response) {
+            responseStats[response] = (responseStats[response] || 0) + 1;
+        }
+
+        function displayStats() {
+            const response = document.getElementById('response');
+            response.innerHTML = '<h3>请求统计:</h3>';
+            for (const [key, value] of Object.entries(responseStats)) {
+                response.innerHTML += `<p>${key}: ${value} 次</p >`;
+            }
+        }
+
+        function updateTimeDisplay() {
+            fetchBeijingTime().then(time => {
+                const timeDisplay = document.getElementById('timeDisplay');
+                timeDisplay.textContent = `北京时间: ${time.toLocaleString('zh-CN', { hour12: false })}`;
+            });
+        }
+
+        setInterval(updateTimeDisplay, 1000);
+        updateTimeDisplay();
     </script>
 </body>
 </html>
