@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>阿拉来在线抢购</title>
+    <title>POST和GET请求页面</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -61,16 +61,16 @@
 </head>
 <body>
     <div class="container">
-        <h1>阿拉来通杀</h1>
+        <h1>POST和GET请求页面</h1>
         <div class="form-group">
             <input type="text" id="interval" placeholder="循环间隔时间（毫秒）">
             <input type="text" id="authorization" placeholder="Authorization令牌">
             <input type="number" id="sessionId" placeholder="LootActivitySessionID">
             <input type="number" id="prizeId" placeholder="LootActivitySessionPrizeID">
             <input type="text" id="startTime" placeholder="定时启动时间（格式: HH:MM:SS:SSS）">
-            <button onclick="scheduleRequests()">定时启动点我</button>
-            <button onclick="startRequests()">立即抢购</button>
-            <button onclick="stopRequests()">结束抢购</button>
+            <button id="scheduleButton">定时启动</button>
+            <button id="startButton">开始请求</button>
+            <button id="stopButton">结束请求</button>
         </div>
         <div id="response" style="margin-top: 20px;"></div>
         <div class="history" id="history"></div>
@@ -147,14 +147,8 @@
             }
         }
 
-        async function startRequests() {
-            if (running) return;
-            running = true;
-            const interval = parseInt(document.getElementById('interval').value);
-            const authorization = document.getElementById('authorization').value;
-            const sessionId = parseInt(document.getElementById('sessionId').value);
-            const prizeId = parseInt(document.getElementById('prizeId').value);
-
+        async function executeRequests(interval, authorization, sessionId, prizeId) {
+            if (!running) return;
             const post_url = "https://gateway.allxf.top/lootactivityapi/OpenService/v1/Activity/QueueReceiveLootActivity";
             const post_headers = {
                 "Host": "gateway.allxf.top",
@@ -176,22 +170,27 @@
                 "Accept": "application/json, text/plain, */*"
             };
 
-            async function executeRequests() {
-                if (!running) return;
-                const extracted_string = await sendPostRequest(post_url, post_headers, post_data);
-                if (extracted_string) {
-                    const params = { "QueueReceiveKey": `LootActivity:QueueReceive:CachePrefix${extracted_string}` };
-                    const get_response = await sendGetRequest(get_url, get_headers, params);
-                    if (get_response) {
-                        document.getElementById('response').innerHTML = `<pre>${get_response}</pre>`;
-                        addToHistory(get_response);
-                        updateStats(get_response);
-                    }
+            const extracted_string = await sendPostRequest(post_url, post_headers, post_data);
+            if (extracted_string) {
+                const params = { "QueueReceiveKey": `LootActivity:QueueReceive:CachePrefix${extracted_string}` };
+                const get_response = await sendGetRequest(get_url, get_headers, params);
+                if (get_response) {
+                    document.getElementById('response').innerHTML = `<pre>${get_response}</pre>`;
+                    addToHistory(get_response);
+                    updateStats(get_response);
                 }
             }
+            intervalId = setTimeout(() => executeRequests(interval, authorization, sessionId, prizeId), interval);
+        }
 
-            executeRequests(); // 立即执行第一次请求
-            intervalId = setInterval(executeRequests, interval); // 设定间隔时间后继续请求
+        function startRequests() {
+            if (running) return;
+            running = true;
+            const interval = parseInt(document.getElementById('interval').value);
+            const authorization = document.getElementById('authorization').value;
+            const sessionId = parseInt(document.getElementById('sessionId').value);
+            const prizeId = parseInt(document.getElementById('prizeId').value);
+            executeRequests(interval, authorization, sessionId, prizeId);
         }
 
         async function scheduleRequests() {
@@ -203,50 +202,14 @@
             const prizeId = parseInt(document.getElementById('prizeId').value);
             const startTime = document.getElementById('startTime').value;
 
-            const post_url = "https://gateway.allxf.top/lootactivityapi/OpenService/v1/Activity/QueueReceiveLootActivity";
-            const post_headers = {
-                "Host": "gateway.allxf.top",
-                "Authorization": authorization,
-                "Content-Type": "application/json;charset=UTF-8",
-                "Referer": "https://m.allxf.top/"
-            };
-            const post_data = {
-                "LootActivitySessionID": sessionId,
-                "LootActivitySessionPrizeID": prizeId,
-                "BeaconVerifyParam": []
-            };
-
-            const get_url = "https://gateway.allxf.top/lootactivityapi/OpenService/v1/Activity/GetQueueReceiveLootActivityResult";
-            const get_headers = {
-                "Host": "gateway.allxf.top",
-                "Authorization": authorization,
-                "Content-Type": "application/json;charset=UTF-8",
-                "Accept": "application/json, text/plain, */*"
-            };
-
-            async function executeRequests() {
-                if (!running) return;
-                const extracted_string = await sendPostRequest(post_url, post_headers, post_data);
-                if (extracted_string) {
-                    const params = { "QueueReceiveKey": `LootActivity:QueueReceive:CachePrefix${extracted_string}` };
-                    const get_response = await sendGetRequest(get_url, get_headers, params);
-                    if (get_response) {
-                        document.getElementById('response').innerHTML = `<pre>${get_response}</pre>`;
-                        addToHistory(get_response);
-                        updateStats(get_response);
-                    }
-                }
-            }
-
             const [hours, minutes, seconds, milliseconds] = startTime.split(':').map(Number);
             const now = await fetchBeijingTime();
             const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, seconds, milliseconds);
-            if (start < now) start.setDate(start.getDate() + 1);
+            if (start < now) start.setDate(start.getDate() + 1); // 如果指定时间已过，则定为下一天的这个时间
 
             const delay = start - now;
             startTimeout = setTimeout(() => {
-                executeRequests(); // 立即执行第一次请求
-                intervalId = setInterval(executeRequests, interval); // 设定间隔时间后继续请求
+                executeRequests(interval, authorization, sessionId, prizeId);
             }, delay);
         }
 
@@ -290,6 +253,10 @@
 
         setInterval(updateTimeDisplay, 1000);
         updateTimeDisplay();
+
+        document.getElementById('startButton').addEventListener('click', startRequests);
+        document.getElementById('scheduleButton').addEventListener('click', scheduleRequests);
+        document.getElementById('stopButton').addEventListener('click', stopRequests);
     </script>
 </body>
 </html>
