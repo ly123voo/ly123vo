@@ -1,193 +1,42 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>橘传媒抢购</title>
+    <title>无限重发请求</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            margin: 0;
-            padding: 20px;
         }
-        h1 {
-            text-align: center;
-            color: #333;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: #fff;
-            padding: 20px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-        }
-        input, select, button {
-            display: block;
-            width: calc(100% - 22px);
-            margin: 10px 0;
-            padding: 10px;
-            font-size: 16px;
-            border-radius: 4px;
-            border: 1px solid #ccc;
-        }
-        button {
-            background-color: #007BFF;
-            color: white;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        #results {
-            margin-top: 20px;
-        }
-        .result-item {
-            background: #e9e9e9;
-            padding: 10px;
+        .token-input {
             margin-bottom: 10px;
-            border-radius: 4px;
         }
-        .progress {
-            background: #007BFF;
-            height: 5px;
-            border-radius: 2px;
-            margin-top: 10px;
+        .result {
+            margin-top: 20px;
+            white-space: pre-wrap;
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 5px;
         }
     </style>
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            let couponId = 1890;
-            let stopFlag = false;
-            let intervalId;
-            const resultsContainer = document.getElementById("results");
-
-            document.getElementById("coupon-select").addEventListener("change", function() {
-                const selectedValue = this.value;
-                if (selectedValue === "20") {
-                    couponId = 1892;
-                } else if (selectedValue === "50") {
-                    couponId = 1890;
-                } else if (selectedValue === "100") {
-                    couponId = 1889;
-                }
-            });
-
-            document.getElementById("submit-btn").addEventListener("click", function() {
-                const utoken = document.getElementById("utoken").value;
-                const requestInterval = parseInt(document.getElementById("request-interval").value);
-
-                stopFlag = false;
-                resultsContainer.innerHTML = '';
-
-                sendRequest(utoken, couponId).then(result => displayResult(result));
-
-                intervalId = setInterval(() => {
-                    if (stopFlag) return clearInterval(intervalId);
-                    displayProgress();
-                    sendRequest(utoken, couponId).then(result => displayResult(result));
-                }, requestInterval);
-            });
-
-            document.getElementById("stop-btn").addEventListener("click", function() {
-                stopFlag = true;
-                clearInterval(intervalId);
-                summarizeResults();
-            });
-
-            function displayProgress() {
-                const progress = document.createElement("div");
-                progress.className = "progress";
-                resultsContainer.appendChild(progress);
-                setTimeout(() => {
-                    progress.style.width = "100%";
-                }, 0);
-            }
-
-            async function sendRequest(utoken, couponId) {
-                const url = "https://mkapi.xinhuamm.net/shopapi/ulapi/coupon/gainCoupon";
-                const data = {
-                    couponId: couponId,
-                    sign: "08b2b705cc3382efaf12d5265fa8f301"
-                };
-
-                const headers = {
-                    "Host": "mkapi.xinhuamm.net",
-                    "Connection": "keep-alive",
-                    "Content-Length": "59",
-                    "sec-ch-ua": "\"Android WebView\";v=\"125\", \"Chromium\";v=\"125\", \"Not.A/Brand\";v=\"24\"",
-                    "Content-Type": "application/json",
-                    "utoken": utoken,
-                    "lesseeCode": "hy",
-                    "sec-ch-ua-mobile": "?1",
-                    "sec-ch-ua-platform": "\"Android\"",
-                    "Accept": "*/*",
-                    "Referer": "https://hy.market.xinhuamm.net/",
-                    "Accept-Encoding": "gzip, deflate, br, zstd",
-                    "Accept-Language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7"
-                };
-
-                try {
-                    const response = await fetch(url, {
-                        method: "POST",
-                        headers: headers,
-                        body: JSON.stringify(data)
-                    });
-                    const result = await response.json();
-                    return handleResult(result);
-                } catch (error) {
-                    return { error: error.message };
-                }
-            }
-
-            function handleResult(result) {
-                let resultText = JSON.stringify(result, null, 2);
-                if (resultText.includes("火爆")) {
-                    resultText = "IP黑了或抢购过快";
-                } else if (resultText.includes("领取失败")) {
-                    resultText = "未开始";
-                }
-                return resultText;
-            }
-
-            function displayResult(result) {
-                const resultItem = document.createElement("div");
-                resultItem.className = "result-item";
-                resultItem.innerText = result;
-                resultsContainer.appendChild(resultItem);
-            }
-
-            function summarizeResults() {
-                const results = Array.from(document.getElementsByClassName("result-item"));
-                const summary = results.reduce((acc, result) => {
-                    const text = result.innerText;
-                    acc[text] = (acc[text] || 0) + 1;
-                    return acc;
-                }, {});
-                const summaryDiv = document.createElement("div");
-                summaryDiv.className = "result-item";
-                summaryDiv.innerHTML = `<strong>Summary:</strong> <pre>${JSON.stringify(summary, null, 2)}</pre>`;
-                resultsContainer.appendChild(summaryDiv);
-            }
-        });
-    </script>
 </head>
 <body>
-    <h1>橘传媒抢购</h1>
-    <div class="container">
-        <input type="text" id="utoken" placeholder="请输入utoken">
-        <label for="coupon-select">选择Coupon ID:</label>
-        <select id="coupon-select">
-            <option value="20">20</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-        </select>
-        <label for="request-interval">抢购间隔 (毫秒):</label>
-        <input type="number" id="request-interval" value="1000" min="0">
-        <button id="submit-btn">提交抢购</button>
-        <button id="stop-btn">结束运行</button>
-        <div id="results"></div>
+    <h1>无限重发请求</h1>
+    <div id="form-container">
+        <div class="token-input">
+            <label for="token1">Token 1:</label>
+            <input type="text" id="token1" name="token">
+        </div>
     </div>
+    <button id="add-token">添加Token</button><br><br>
+    <label for="interval">请求间隔(毫秒):</label>
+    <input type="number" id="interval" value="1000"><br><br>
+    <label for="concurrency">并发数:</label>
+    <input type="number" id="concurrency" value="1"><br><br>
+    <button id="start">开始请求</button>
+    <button id="stop">结束请求</button>
+    <div id="result" class="result"></div>
+
+    <script src="script.js"></script>
 </body>
 </html>
