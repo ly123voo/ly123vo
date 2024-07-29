@@ -1,1 +1,296 @@
-0
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阿拉来抢购（定时没修）</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            text-align: center;
+            padding: 20px;
+        }
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            margin: auto;
+        }
+        input, textarea, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #28a745;
+            color: #fff;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .history {
+            margin-top: 20px;
+            text-align: left;
+        }
+        .history-item {
+            background-color: #e9ecef;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .history-item pre {
+            display: none;
+            margin: 0;
+            padding: 10px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .time-display {
+            margin-top: 10px;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>阿拉来通杀</h1>
+        <div class="form-group">
+            <input type="text" id="interval" placeholder="循环间隔时间（毫秒）">
+            <input type="text" id="startTime" placeholder="定时启动时间（格式: HH:MM:SS:SSS）">
+            <div id="authorizationContainer">
+                <input type="text" class="authorization" placeholder="Authorization令牌">
+            </div>
+            <button id="addAuthorizationButton">加一个账户</button>
+            <button id="extractAndReplaceButton">提取并替换</button>
+            <button id="scheduleButton">定时启动</button>
+            <button id="startButton">立即抢购</button>
+            <button id="stopButton">结束抢购</button>
+        </div>
+        <div id="response" style="margin-top: 20px;"></div>
+        <div class="history" id="history"></div>
+        <div class="time-display" id="timeDisplay"></div>
+    </div>
+
+    <script>
+        let intervalId;
+        let running = false;
+        let startTimeout;
+        let cachePrefixes = {};  // To store the extracted CachePrefix for each Authorization
+        let currentTime;
+
+        async function fetchBeijingTime() {
+            try {
+                const response = await fetch('https://worldtimeapi.org/api/timezone/Asia/Shanghai');
+                if (response.ok) {
+                    const data = await response.json();
+                    return new Date(data.datetime);
+                } else {
+                    console.error('无法获取北京时间');
+                    return new Date();
+                }
+            } catch (error) {
+                console.error('请求错误:', error);
+                return new Date();
+            }
+        }
+
+        async function updateLocalTime() {
+            currentTime = await fetchBeijingTime();
+        }
+
+        function updateTimeDisplay() {
+            currentTime.setMilliseconds(currentTime.getMilliseconds() + 500);
+            const timeDisplay = document.getElementById('timeDisplay');
+            timeDisplay.textContent = `北京时间: ${currentTime.toLocaleString('zh-CN', { hour12: false })}`;
+        }
+
+        async function sendPostRequest(post_url, headers, data) {
+            try {
+                const response = await fetch(post_url, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(data),
+                    timeout: 10000
+                });
+                if (response.ok) {
+                    const text = await response.text();
+                    const match = text.match(/CachePrefix([^\s]{51})/);
+                    if (match) {
+                        return match[1];
+                    } else {
+                        console.log("未找到匹配的字符串");
+                        return null;
+                    }
+                } else {
+                    console.log("POST请求失败，状态码:", response.status);
+                    return null;
+                }
+            } catch (error) {
+                console.log("请求错误:", error);
+                return null;
+            }
+        }
+
+        async function sendGetRequest(get_url, headers, params) {
+            try {
+                const url = new URL(get_url);
+                url.search = new URLSearchParams(params).toString();
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: headers,
+                    timeout: 10000
+                });
+                if (response.ok) {
+                    return await response.text();
+                } else {
+                    console.log("GET请求失败，状态码:", response.status);
+                    return null;
+                }
+            } catch (error) {
+                console.log("请求错误:", error);
+                return null;
+            }
+        }
+
+        async function extractAndReplace() {
+            const post_url = "https://gateway.allxf.top/lootactivityapi/OpenService/v1/Activity/QueueReceiveLootActivity";
+            const authorizations = Array.from(document.getElementsByClassName('authorization')).map(input => input.value);
+
+            const extractionPromises = authorizations.map(async (authorization) => {
+                const post_headers = {
+                    "Host": "gateway.allxf.top",
+                    "Authorization": authorization,
+                    "Content-Type": "application/json;charset=UTF-8",
+                    "Referer": "https://m.allxf.top/"
+                };
+                const post_data = {
+                    "LootActivitySessionID": 800269,
+                    "LootActivitySessionPrizeID": 401160,
+                    "BeaconVerifyParam": []
+                };
+
+                const extracted_string = await sendPostRequest(post_url, post_headers, post_data);
+                if (extracted_string) {
+                    cachePrefixes[authorization] = `LootActivity:QueueReceive:CachePrefix${extracted_string}`;
+                    alert('提取成功，有效期约3分钟');
+                } else {
+                    alert('提取失败');
+                }
+            });
+
+            await Promise.all(extractionPromises);
+        }
+
+        async function executeRequests(interval, authorizations) {
+            if (!running) return;
+
+            const get_url = "https://gateway.allxf.top/lootactivityapi/OpenService/v1/Activity/GetQueueReceiveLootActivityResult";
+
+            const promises = authorizations.map(async (authorization) => {
+                const get_headers = {
+                    "Host": "gateway.allxf.top",
+                    "Authorization": authorization,
+                    "Content-Type": "application/json;charset=UTF-8",
+                    "Accept": "application/json, text/plain, */*"
+                };
+
+                while (running) {
+                    try {
+                        const extracted_string = cachePrefixes[authorization];  // Use extracted CachePrefix for this Authorization
+                        const params = { "QueueReceiveKey": extracted_string };
+                        const get_response = await sendGetRequest(get_url, get_headers, params);
+                        if (get_response) {
+                            const timestamp = new Date().toLocaleString('zh-CN', { hour12: false });
+                            const responseWithTime = `${timestamp}\n${get_response}`;
+                            document.getElementById('response').innerHTML = `<pre>${responseWithTime}</pre>`;
+                            addToHistory(responseWithTime);
+                            updateStats(get_response);
+                        }
+                    } catch (error) {
+                        console.error('请求错误:', error);
+                    }
+                    await new Promise(resolve => setTimeout(resolve, interval));
+                }
+            });
+
+            await Promise.all(promises);
+        }
+
+        function startRequests() {
+            if (running) return;
+            running = true;
+            const interval = parseInt(document.getElementById('interval').value);
+            const authorizations = Array.from(document.getElementsByClassName('authorization')).map(input => input.value);
+            executeRequests(interval, authorizations);
+        }
+
+        async function scheduleRequests() {
+            if (running) return;
+            running = true;
+            const interval = parseInt(document.getElementById('interval').value);
+            const authorizations = Array.from(document.getElementsByClassName('authorization')).map(input => input.value);
+            const startTime = document.getElementById('startTime').value;
+
+            const [hours, minutes, seconds, milliseconds] = startTime.split(':').map(Number);
+            const now = await fetchBeijingTime();
+            const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, seconds, milliseconds);
+            if (start < now) start.setDate(start.getDate() + 1); // 如果时间早于当前时间，则设置为明天
+
+            const timeUntilStart = start - now;
+            startTimeout = setTimeout(() => {
+                updateLocalTime();  // 更新本地时间
+                startRequests();
+            }, timeUntilStart);
+        }
+
+        function stopRequests() {
+            running = false;
+            clearTimeout(startTimeout);
+            document.getElementById('response').innerHTML = '抢购已停止';
+        }
+
+        function addToHistory(response) {
+            const history = document.getElementById('history');
+            const historyItem = document.createElement('div');
+            historyItem.className = 'history-item';
+            historyItem.innerHTML = `<pre>${response}</pre>`;
+            historyItem.addEventListener('click', () => {
+                historyItem.querySelector('pre').style.display = historyItem.querySelector('pre').style.display === 'none' ? 'block' : 'none';
+            });
+            history.appendChild(historyItem);
+        }
+
+        function updateStats(response) {
+            // 这里可以添加统计信息的代码
+        }
+
+        document.getElementById('addAuthorizationButton').addEventListener('click', () => {
+            const container = document.getElementById('authorizationContainer');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'authorization';
+            input.placeholder = 'Authorization令牌';
+            container.appendChild(input);
+        });
+
+        document.getElementById('extractAndReplaceButton').addEventListener('click', extractAndReplace);
+
+        document.getElementById('scheduleButton').addEventListener('click', scheduleRequests);
+
+        document.getElementById('startButton').addEventListener('click', startRequests);
+
+        document.getElementById('stopButton').addEventListener('click', stopRequests);
+
+        // Update time display every second
+        setInterval(updateTimeDisplay, 500);
+    </script>
+</body>
+</html>
