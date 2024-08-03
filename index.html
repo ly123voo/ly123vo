@@ -80,9 +80,9 @@
             const key = await getQueueReceiveKey(auth);
             if (key) {
                 queueReceiveKeys[auth] = key;
-                alert(`提取成功: ${key}`);
+                alert(`提取成功`);
             } else {
-                alert(`提取失败: ${auth}`);
+                alert(`提取失败`);
             }
         }
     }
