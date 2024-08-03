@@ -1,1 +1,175 @@
-1
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>阿拉来抢购</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f0f0f0; text-align: center; padding: 20px; }
+        .container { background-color: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, .1); max-width: 600px; margin: auto; }
+        input, textarea, button { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 5px; }
+        button { background-color: #28a745; color: #fff; cursor: pointer; }
+        button:hover { background-color: #218838; }
+        .history { margin-top: 20px; text-align: left; }
+        .history-item { background-color: #e9ecef; margin: 10px 0; padding: 10px; border-radius: 5px; cursor: pointer; }
+        .history-item pre { display: none; margin: 0; padding: 10px; background-color: #fff; border: 1px solid #ccc; border-radius: 5px; }
+        .time-display { margin-top: 10px; font-size: 1.2em; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>阿拉来通杀</h1>
+    <div class="form-group">
+        <input type="text" id="interval" placeholder="循环间隔时间（毫秒）">
+        <div id="authorizationContainer">
+            <input type="text" class="authorization" placeholder="Authorization令牌">
+        </div>
+        <button id="addAuthorizationButton">加一个账户</button>
+        <button id="extractAndReplaceButton">提取并替换</button>
+        <button id="startButton">立即抢购</button>
+        <button id="stopButton">结束抢购</button>
+    </div>
+    <div id="response" style="margin-top: 20px;"></div>
+    <div class="history" id="history"></div>
+    <div class="time-display" id="timeDisplay"></div>
+</div>
+
+<script>
+    let isRunning = false;
+    let queueReceiveKeys = {};
+    let intervalIds = [];
+
+    async function getQueueReceiveKey(auth) {
+        const url_queue_receive = "https://gateway.allxf.top/lootactivityapi/OpenService/v1/Activity/QueueReceiveLootActivity";
+        const headers = {
+            "Host": "gateway.allxf.top",
+            "Connection": "keep-alive",
+            "Authorization": auth,
+            "Content-Type": "application/json;charset=UTF-8",
+            "Accept": "application/json, text/plain, */*"
+        };
+        const data_queue_receive = {
+            "LootActivitySessionID": 800133,
+            "LootActivitySessionPrizeID": 401145,
+            "BeaconVerifyParam": []
+        };
+
+        try {
+            const response = await fetch(url_queue_receive, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(data_queue_receive)
+            });
+
+            if (response.ok) {
+                const responseData = await response.json();
+                const queueReceiveKey = responseData.QueueReceiveKey;
+                return queueReceiveKey;
+            } else {
+                throw new Error('Failed to retrieve QueueReceiveKey');
+            }
+        } catch (error) {
+            console.error(error);
+            return null;
+        }
+    }
+
+    async function extractAndReplace() {
+        const auths = Array.from(document.getElementsByClassName('authorization')).map(input => input.value);
+        for (const auth of auths) {
+            const key = await getQueueReceiveKey(auth);
+            if (key) {
+                queueReceiveKeys[auth] = key;
+                alert(`提取成功: ${key}`);
+            } else {
+                alert(`提取失败: ${auth}`);
+            }
+        }
+    }
+
+    async function sendRequest(auth) {
+        const url_get_result = "https://gateway.allxf.top/lootactivityapi/OpenService/v1/Activity/GetQueueReceiveLootActivityResult";
+        const headers = {
+            "Host": "gateway.allxf.top",
+            "Connection": "keep-alive",
+            "Authorization": auth,
+            "Content-Type": "application/json;charset=UTF-8",
+            "Accept": "application/json, text/plain, */*"
+        };
+        const queueReceiveKey = queueReceiveKeys[auth];
+        const params = new URLSearchParams({ "QueueReceiveKey": queueReceiveKey });
+
+        try {
+            const response = await fetch(`${url_get_result}?${params.toString()}`, {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                const timestamp = new Date().toLocaleString('zh-CN', { hour12: false });
+                const log = `${timestamp}\n${JSON.stringify(data)}`;
+                document.getElementById('response').innerHTML = `<pre>${log}</pre>`;
+                addHistory(log);
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    function startRequests() {
+        if (isRunning) return;
+        isRunning = true;
+        const interval = parseInt(document.getElementById('interval').value);
+        const auths = Array.from(document.getElementsByClassName('authorization')).map(input => input.value);
+        auths.forEach(auth => {
+            if (queueReceiveKeys[auth]) {
+                const intervalId = setInterval(() => {
+                    sendRequest(auth);
+                }, interval);
+                intervalIds.push(intervalId);
+            }
+        });
+    }
+
+    function stopRequests() {
+        isRunning = false;
+        intervalIds.forEach(intervalId => clearInterval(intervalId));
+        intervalIds = [];
+        document.getElementById('response').innerHTML = "抢购已停止";
+    }
+
+    function addHistory(log) {
+        const history = document.getElementById('history');
+        const item = document.createElement('div');
+        item.className = 'history-item';
+        item.innerHTML = `<pre>${log}</pre>`;
+        item.addEventListener('click', () => {
+            const pre = item.querySelector('pre');
+            pre.style.display = pre.style.display === 'none' ? 'block' : 'none';
+        });
+        history.appendChild(item);
+    }
+
+    document.getElementById('addAuthorizationButton').addEventListener('click', () => {
+        const container = document.getElementById('authorizationContainer');
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'authorization';
+        input.placeholder = 'Authorization令牌';
+        container.appendChild(input);
+    });
+
+    document.getElementById('extractAndReplaceButton').addEventListener('click', extractAndReplace);
+    document.getElementById('startButton').addEventListener('click', startRequests);
+    document.getElementById('stopButton').addEventListener('click', stopRequests);
+
+    function updateTime() {
+        const now = new Date();
+        document.getElementById('timeDisplay').textContent = `当前时间: ${now.toLocaleString('zh-CN', { hour12: false })}`;
+    }
+
+    setInterval(updateTime, 1000);
+</script>
+</body>
+</html>
