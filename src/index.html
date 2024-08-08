@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>信息提交</title>
+</head>
+<body>
+    <h1>提交信息</h1>
+    <form id="submitForm">
+        <label for="name">名字:</label>
+        <input type="text" id="name" name="name" required>
+        <br><br>
+        <label for="message">信息:</label>
+        <textarea id="message" name="message" required></textarea>
+        <br><br>
+        <button type="submit">提交</button>
+    </form>
+
+    <h2>提交的内容</h2>
+    <div id="submittedData"></div>
+
+    <script>
+        document.getElementById('submitForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const message = document.getElementById('message').value;
+
+            fetch('/.netlify/functions/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name, message }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('submittedData').innerHTML = `
+                    <p>名字: ${data.name}</p >
+                    <p>信息: ${data.message}</p >
+                `;
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>
