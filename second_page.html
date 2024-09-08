@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>第二个界面</title>
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: #000;
+    }
+
+    .container {
+      background: #222;
+      padding: 40px;
+      border-radius: 4px;
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+      text-align: center;
+    }
+
+    input {
+      padding: 10px;
+      font-size: 16px;
+      margin-bottom: 20px;
+      width: 100%;
+      max-width: 300px;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #0f0;
+      border: none;
+      color: #111;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h2>请输入手机号</h2>
+    <input type="text" id="phone" placeholder="手机号">
+    <button onclick="submitPhone()">开始</button>
+  </div>
+
+  <script>
+    function submitPhone() {
+      const phone = document.getElementById('phone').value;
+
+      const data = {
+        AcceptType: "sendwritevercode",
+        AcceptContent: JSON.stringify({ Mobile: phone })
+      };
+
+      fetch('https://www.luzhou12345.cn/app12345wbs.asmx/getInfo', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      })
+        .then(response => response.json())
+        .then(result => {
+          console.log('接口运行完毕:', result);
+          alert('请求已发送！');
+        })
+        .catch(error => console.error('Error:', error));
+    }
+  </script>
+</body>
+
+</html>
