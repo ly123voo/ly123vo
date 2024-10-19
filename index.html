@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>老佛爷监控(500.01-500)</title>
+    <title>老佛爷监控500.01-500</title>
     <style>
         body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background-color:#f4f4f9;margin:0;padding:20px;display:flex;justify-content:center;align-items:center;height:100vh;}
         .container{background-color:#ffffff;box-shadow:0 4px 8px rgba(0,0,0,0.1);padding:20px;border-radius:8px;max-width:500px;width:100%;}
@@ -58,7 +58,7 @@
 
         const url = "https://coupon.weiheguang.cn/api/bjcoupons/shop_appli/c/applis?shop_id=70&act_number=A20241016-459007";
 
-        monitorInterval = setInterval(() => {
+        function checkStatus() {
             fetch(url, { method: 'GET', headers: headers })
                 .then(response => response.json())
                 .then(data => {
@@ -69,7 +69,7 @@
                     results.value = resultText + results.value; 
                     console.log(`Access Status: ${status}`);  
 
-                    if (status === "available") {
+                    if (status === "sellout") {
                         alertSound.play().catch(error => console.error('Error playing sound:', error));
                         if (!postInterval) { 
                             startPostRequests(authorization);
@@ -82,11 +82,14 @@
                     results.value = resultText + results.value;
                     console.error('Error fetching data:', error);
                 });
-        }, interval);
+        }
+
+        checkStatus();
+        monitorInterval = setInterval(checkStatus, interval);
     }
 
     function startPostRequests(authorization) {
-        if (postInterval) return; 
+        if (postInterval) return;
         const postUrl = "https://coupon.weiheguang.cn/api/bjcoupons/coupon/fetch_coupon_v2/QC20241016-228633";
         const postHeaders = {
             "Host": "coupon.weiheguang.cn",
@@ -114,7 +117,7 @@
                 document.getElementById('e').value = resultText + document.getElementById('e').value;
             })
             .catch(error => console.error('Error executing POST request:', error));
-        }, 1000); 
+        }, 1000);
     }
 
     function stopMonitoring() {
