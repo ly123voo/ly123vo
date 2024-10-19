@@ -26,29 +26,30 @@
     <label for="b">authorization:</label>
     <input type="text" id="b" value="">
 
-    <button onclick="c()">开始监控</button>
-    <button onclick="d()">停止监控</button>
+    <button onclick="startMonitoring()">开始监控</button>
+    <button onclick="stopMonitoring()">停止监控</button>
 
     <h2>结果</h2>
     <textarea id="e" readonly></textarea>
 </div>
 
-<audio id="f" src="http://m701.music.126.net/20241019222326/51c5934674023f67d6a97bb525f818e8/jdymusic/obj/wo3DlMOGwrbDjj7DisKw/14096417167/048c/4cb1/7dd0/a6e99101597f8b95b23244d4c7ec35c7.mp3"></audio>
+<audio id="f" src="https://www.xzmp3.com/down/4bfa74c7b120.mp3" preload="auto"></audio>
 
 <script>
-    let g;
-    const h = document.getElementById('f');
+    let monitorInterval;
+    let postInterval;
+    const alertSound = document.getElementById('f');
 
-    function c() {
-        const a = document.getElementById('a').value;
-        const b = document.getElementById('b').value;
-        const e = document.getElementById('e');
+    function startMonitoring() {
+        const interval = document.getElementById('a').value;
+        const authorization = document.getElementById('b').value;
+        const results = document.getElementById('e');
 
         const headers = new Headers({
             "Host": "coupon.weiheguang.cn",
             "sec-ch-ua": '"Not/A)Brand";v="8", "Chromium";v="126", "Android WebView";v="126"',
             "sec-ch-ua-mobile": "?1",
-            "authorization": b,
+            "authorization": authorization,
             "sec-ch-ua-platform": '"Android"',
             "accept": "*/*",
             "x-requested-with": "com.tencent.mm",
@@ -57,32 +58,69 @@
 
         const url = "https://coupon.weiheguang.cn/api/bjcoupons/shop_appli/c/applis?shop_id=70&act_number=A20241016-459007";
 
-        g = setInterval(() => {
+        monitorInterval = setInterval(() => {
             fetch(url, { method: 'GET', headers: headers })
                 .then(response => response.json())
                 .then(data => {
                     const status = data.data[0]?.access_status || "过期了";
-                    const i = new Date().toLocaleString();
-                    const j = `请求时间: ${i}\n状态: ${status}\n`;
+                    const currentTime = new Date().toLocaleString();
+                    const resultText = `请求时间: ${currentTime}\n状态: ${status}\n`;
 
-                    e.value = j + e.value; 
+                    results.value = resultText + results.value; 
                     console.log(`Access Status: ${status}`);  
 
                     if (status === "available") {
-                        h.play();
+                        alertSound.play().catch(error => console.error('Error playing sound:', error));
+                        if (!postInterval) { 
+                            startPostRequests(authorization);
+                        }
                     }
                 })
-                .catch(k => {
-                    const i = new Date().toLocaleString();
-                    const j = `请求时间: ${i}\n状态: 过期了\n`;
-                    e.value = j + e.value;
-                    console.error('Error fetching data:', k);
+                .catch(error => {
+                    const currentTime = new Date().toLocaleString();
+                    const resultText = `请求时间: ${currentTime}\n状态: 过期了\n`;
+                    results.value = resultText + results.value;
+                    console.error('Error fetching data:', error);
                 });
-        }, a);
+        }, interval);
     }
 
-    function d() {
-        clearInterval(g);
+    function startPostRequests(authorization) {
+        if (postInterval) return; 
+        const postUrl = "https://coupon.weiheguang.cn/api/bjcoupons/coupon/fetch_coupon_v2/QC20241016-228633";
+        const postHeaders = {
+            "Host": "coupon.weiheguang.cn",
+            "content-length": "20",
+            "sec-ch-ua": '"Not/A)Brand";v="8", "Chromium";v="126", "Android WebView";v="126"',
+            "sec-ch-ua-mobile": "?1",
+            "authorization": authorization,
+            "x-requested-with": "com.tencent.mm",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "accept-language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+            "priority": "u=1, i"
+        };
+        const postData = JSON.stringify({ "channel": "wechat" });
+
+        postInterval = setInterval(() => {
+            fetch(postUrl, {
+                method: 'POST',
+                headers: postHeaders,
+                body: postData
+            })
+            .then(response => response.text())
+            .then(data => {
+                const currentTime = new Date().toLocaleString();
+                const resultText = `POST请求时间: ${currentTime}\n结果: ${data}\n`;
+                document.getElementById('e').value = resultText + document.getElementById('e').value;
+            })
+            .catch(error => console.error('Error executing POST request:', error));
+        }, 1000); 
+    }
+
+    function stopMonitoring() {
+        clearInterval(monitorInterval);
+        clearInterval(postInterval);
+        postInterval = null; 
     }
 </script>
 
