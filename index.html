@@ -69,7 +69,7 @@
                     results.value = resultText + results.value; 
                     console.log(`Access Status: ${status}`);  
 
-                    if (status === "sellout") {
+                    if (status === "available") {
                         alertSound.play().catch(error => console.error('Error playing sound:', error));
                         if (!postInterval) { 
                             startPostRequests(authorization);
