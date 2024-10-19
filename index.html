@@ -5,92 +5,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>老佛爷监控</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f4f9;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .container {
-            background-color: #ffffff;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            padding: 20px;
-            border-radius: 8px;
-            max-width: 500px;
-            width: 100%;
-        }
-        h1 {
-            text-align: center;
-            color: #333;
-        }
-        label {
-            font-weight: bold;
-            margin-top: 10px;
-        }
-        input, button, textarea {
-            width: 100%;
-            padding: 10px;
-            margin-top: 5px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        button {
-            background-color: #28a745;
-            color: white;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #218838;
-        }
-        button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-        textarea {
-            height: 200px;
-            resize: none;
-        }
+        body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background-color:#f4f4f9;margin:0;padding:20px;display:flex;justify-content:center;align-items:center;height:100vh;}
+        .container{background-color:#ffffff;box-shadow:0 4px 8px rgba(0,0,0,0.1);padding:20px;border-radius:8px;max-width:500px;width:100%;}
+        h1{text-align:center;color:#333;}
+        label{font-weight:bold;margin-top:10px;}
+        input,button,textarea{width:100%;padding:10px;margin-top:5px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box;}
+        button{background-color:#28a745;color:white;cursor:pointer;transition:background-color 0.3s;}
+        button:hover{background-color:#218838;}
+        button:disabled{background-color:#ccc;cursor:not-allowed;}
+        textarea{height:200px;resize:none;}
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>老佛爷监控</h1>
-    <label for="interval">间隔 (ms):</label>
-    <input type="number" id="interval" value="1000">
+    <label for="a">间隔 (ms):</label>
+    <input type="number" id="a" value="1000">
 
-    <label for="auth">authorization:</label>
-    <input type="text" id="auth" value="">
+    <label for="b">authorization:</label>
+    <input type="text" id="b" value="">
 
-    <button onclick="startMonitoring()">开始监控</button>
-    <button onclick="stopMonitoring()">停止监控</button>
+    <button onclick="c()">开始监控</button>
+    <button onclick="d()">停止监控</button>
 
     <h2>结果</h2>
-    <textarea id="results" readonly></textarea>
+    <textarea id="e" readonly></textarea>
 </div>
 
-<audio id="alert-sound" src="http://m701.music.126.net/20241019222326/51c5934674023f67d6a97bb525f818e8/jdymusic/obj/wo3DlMOGwrbDjj7DisKw/14096417167/048c/4cb1/7dd0/a6e99101597f8b95b23244d4c7ec35c7.mp3"></audio>
+<audio id="f" src="http://m701.music.126.net/20241019222326/51c5934674023f67d6a97bb525f818e8/jdymusic/obj/wo3DlMOGwrbDjj7DisKw/14096417167/048c/4cb1/7dd0/a6e99101597f8b95b23244d4c7ec35c7.mp3"></audio>
 
 <script>
-    let monitorInterval;
-    const alertSound = document.getElementById('alert-sound');
+    let g;
+    const h = document.getElementById('f');
 
-    function startMonitoring() {
-        const interval = document.getElementById('interval').value;
-        const authorization = document.getElementById('auth').value;
-        const results = document.getElementById('results');
+    function c() {
+        const a = document.getElementById('a').value;
+        const b = document.getElementById('b').value;
+        const e = document.getElementById('e');
 
         const headers = new Headers({
             "Host": "coupon.weiheguang.cn",
             "sec-ch-ua": '"Not/A)Brand";v="8", "Chromium";v="126", "Android WebView";v="126"',
             "sec-ch-ua-mobile": "?1",
-            "authorization": authorization,
+            "authorization": b,
             "sec-ch-ua-platform": '"Android"',
             "accept": "*/*",
             "x-requested-with": "com.tencent.mm",
@@ -99,28 +57,27 @@
 
         const url = "https://coupon.weiheguang.cn/api/bjcoupons/shop_appli/c/applis?shop_id=70&act_number=A20241016-459007";
 
-        monitorInterval = setInterval(() => {
+        g = setInterval(() => {
             fetch(url, { method: 'GET', headers: headers })
                 .then(response => response.json())
                 .then(data => {
                     const status = data.data[0].access_status;
-                    const currentTime = new Date().toLocaleString();
-                    const resultText = `请求时间: ${currentTime}\n状态: ${status}\n`;
+                    const i = new Date().toLocaleString();
+                    const j = `请求时间: ${i}\n状态: ${status}\n`;
 
-                    results.value = resultText + results.value; 
-
+                    e.value = j + e.value; 
                     console.log(`Access Status: ${status}`);  
 
                     if (status === "available") {
-                        alertSound.play();
+                        h.play();
                     }
                 })
-                .catch(error => console.error('Error fetching data:', error));
-        }, interval);
+                .catch(k => console.error('Error fetching data:', k));
+        }, a);
     }
 
-    function stopMonitoring() {
-        clearInterval(monitorInterval);
+    function d() {
+        clearInterval(g);
     }
 </script>
 
