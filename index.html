@@ -61,18 +61,23 @@
             fetch(url, { method: 'GET', headers: headers })
                 .then(response => response.json())
                 .then(data => {
-                    const status = data.data[0].access_status;
+                    const status = data.data[0]?.access_status || "过期了";
                     const i = new Date().toLocaleString();
                     const j = `请求时间: ${i}\n状态: ${status}\n`;
 
                     e.value = j + e.value; 
                     console.log(`Access Status: ${status}`);  
 
-                    if (status === "sellout") {
+                    if (status === "available") {
                         h.play();
                     }
                 })
-                .catch(k => console.error('Error fetching data:', k));
+                .catch(k => {
+                    const i = new Date().toLocaleString();
+                    const j = `请求时间: ${i}\n状态: 过期了\n`;
+                    e.value = j + e.value;
+                    console.error('Error fetching data:', k);
+                });
         }, a);
     }
 
