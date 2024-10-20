@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>老佛爷监控500.01-500</title>
+    <title>老佛爷监控太君</title>
     <style>
         body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background-color:#f4f4f9;margin:0;padding:20px;display:flex;justify-content:center;align-items:center;height:100vh;}
         .container{background-color:#ffffff;box-shadow:0 4px 8px rgba(0,0,0,0.1);padding:20px;border-radius:8px;max-width:500px;width:100%;}
@@ -62,14 +62,22 @@
             fetch(url, { method: 'GET', headers: headers })
                 .then(response => response.json())
                 .then(data => {
-                    const status = data.data[0]?.access_status || "过期了";
                     const currentTime = new Date().toLocaleString();
-                    const resultText = `请求时间: ${currentTime}\n状态: ${status}\n`;
+                    let availableFound = false;
+                    let resultText = `请求时间: ${currentTime}\n`;
 
-                    results.value = resultText + results.value; 
-                    console.log(`Access Status: ${status}`);  
+                    data.data.forEach(item => {
+                        const status = item.access_status || "过期了";
+                        resultText += `状态: ${status}\n`;
+                        if (status === "available") {
+                            availableFound = true;
+                        }
+                    });
 
-                    if (status === "available") {
+                    results.value = resultText + results.value;
+                    console.log(`Access Statuses Processed`);  
+
+                    if (availableFound) {
                         alertSound.play().catch(error => console.error('Error playing sound:', error));
                         if (!postInterval) { 
                             startPostRequests(authorization);
@@ -117,7 +125,7 @@
                 document.getElementById('e').value = resultText + document.getElementById('e').value;
             })
             .catch(error => console.error('Error executing POST request:', error));
-        }, 1000);
+        }, 200);
     }
 
     function stopMonitoring() {
