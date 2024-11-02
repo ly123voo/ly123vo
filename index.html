@@ -1,139 +1,137 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>老佛爷监控太君</title>
+    <title>花哨登录界面</title>
     <style>
-        body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background-color:#f4f4f9;margin:0;padding:20px;display:flex;justify-content:center;align-items:center;height:100vh;}
-        .container{background-color:#ffffff;box-shadow:0 4px 8px rgba(0,0,0,0.1);padding:20px;border-radius:8px;max-width:500px;width:100%;}
-        h1{text-align:center;color:#333;}
-        label{font-weight:bold;margin-top:10px;}
-        input,button,textarea{width:100%;padding:10px;margin-top:5px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box;}
-        button{background-color:#28a745;color:white;cursor:pointer;transition:background-color 0.3s;}
-        button:hover{background-color:#218838;}
-        button:disabled{background-color:#ccc;cursor:not-allowed;}
-        textarea{height:200px;resize:none;}
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(45deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+            padding: 40px;
+            width: 300px;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: none;
+            border-bottom: 2px solid #ddd;
+            background-color: transparent;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #ff9a9e;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #ff9a9e;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #ff8b8b;
+        }
+        .toggle {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .toggle a {
+            color: #ff9a9e;
+            text-decoration: none;
+        }
     </style>
 </head>
 <body>
+    <div class="container">
+        <h2 id="title">登录</h2>
+        <form id="authForm">
+            <input type="text" id="username" placeholder="用户名" required>
+            <input type="password" id="password" placeholder="密码" required>
+            <button type="submit" id="submitBtn">登录</button>
+        </form>
+        <div class="toggle">
+            <a href="#" id="toggleLink">没有账号？点击注册</a>
+        </div>
+    </div>
 
-<div class="container">
-    <h1>老佛爷监控</h1>
-    <label for="a">间隔 (ms):</label>
-    <input type="number" id="a" value="1000">
+    <script>
+        const form = document.getElementById('authForm');
+        const title = document.getElementById('title');
+        const submitBtn = document.getElementById('submitBtn');
+        const toggleLink = document.getElementById('toggleLink');
+        let isLogin = true;
 
-    <label for="b">authorization:</label>
-    <input type="text" id="b" value="">
-
-    <button onclick="startMonitoring()">开始监控</button>
-    <button onclick="stopMonitoring()">停止监控</button>
-
-    <h2>结果</h2>
-    <textarea id="e" readonly></textarea>
-</div>
-
-<audio id="f" src="http://m10.music.126.net/20241020182606/a4695d8b38ff4a123c90ccab34465c6e/ymusic/obj/w5zDlMODwrDDiGjCn8Ky/14054117261/e592/91f2/68bd/65cf08a2cc55ff042be2f2c5952c4969.mp3" preload="auto"></audio>
-
-<script>
-    let monitorInterval;
-    let postInterval;
-    const alertSound = document.getElementById('f');
-
-    function startMonitoring() {
-        const interval = document.getElementById('a').value;
-        const authorization = document.getElementById('b').value;
-        const results = document.getElementById('e');
-
-        const headers = new Headers({
-            "Host": "coupon.weiheguang.cn",
-            "sec-ch-ua": '"Not/A)Brand";v="8", "Chromium";v="126", "Android WebView";v="126"',
-            "sec-ch-ua-mobile": "?1",
-            "authorization": authorization,
-            "sec-ch-ua-platform": '"Android"',
-            "accept": "*/*",
-            "x-requested-with": "com.tencent.mm",
-            "accept-language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
+        toggleLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            isLogin = !isLogin;
+            if (isLogin) {
+                title.textContent = '登录';
+                submitBtn.textContent = '登录';
+                toggleLink.textContent = '没有账号？点击注册';
+            } else {
+                title.textContent = '注册';
+                submitBtn.textContent = '注册';
+                toggleLink.textContent = '已有账号？点击登录';
+            }
         });
 
-        const url = "https://coupon.weiheguang.cn/api/bjcoupons/shop_appli/c/applis?shop_id=13&act_number=A20241016-459254";
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
 
-        function checkStatus() {
-            fetch(url, { method: 'GET', headers: headers })
-                .then(response => response.json())
-                .then(data => {
-                    const currentTime = new Date().toLocaleString();
-                    let availableFound = false;
-                    let resultText = `请求时间: ${currentTime}\n`;
+            if (isLogin) {
+                login(username, password);
+            } else {
+                register(username, password);
+            }
+        });
 
-                    data.data.forEach(item => {
-                        const status = item.access_status || "过期了";
-                        resultText += `状态: ${status}\n`;
-                        if (status === "available") {
-                            availableFound = true;
-                        }
-                    });
-
-                    results.value = resultText + results.value;
-                    console.log(`Access Statuses Processed`);  
-
-                    if (availableFound) {
-                        alertSound.play().catch(error => console.error('Error playing sound:', error));
-                        if (!postInterval) { 
-                            startPostRequests(authorization);
-                        }
-                    }
-                })
-                .catch(error => {
-                    const currentTime = new Date().toLocaleString();
-                    const resultText = `请求时间: ${currentTime}\n状态: 过期了\n`;
-                    results.value = resultText + results.value;
-                    console.error('Error fetching data:', error);
-                });
+        function register(username, password) {
+            const users = JSON.parse(localStorage.getItem('users')) || {};
+            if (users[username]) {
+                alert('用户名已存在！');
+                return;
+            }
+            users[username] = password;
+            localStorage.setItem('users', JSON.stringify(users));
+            alert('注册成功！');
+            redirectToMainPage();
         }
 
-        checkStatus();
-        monitorInterval = setInterval(checkStatus, interval);
-    }
+        function login(username, password) {
+            const users = JSON.parse(localStorage.getItem('users')) || {};
+            if (users[username] === password) {
+                alert('登录成功！');
+                redirectToMainPage();
+            } else {
+                alert('用户名或密码错误！');
+            }
+        }
 
-    function startPostRequests(authorization) {
-        if (postInterval) return;
-        const postUrl = "https://coupon.weiheguang.cn/api/bjcoupons/coupon/fetch_coupon_v2/QW20241016-325145-9";
-        const postHeaders = {
-            "Host": "coupon.weiheguang.cn",
-            "content-length": "20",
-            "sec-ch-ua": '"Not/A)Brand";v="8", "Chromium";v="126", "Android WebView";v="126"',
-            "sec-ch-ua-mobile": "?1",
-            "authorization": authorization,
-            "x-requested-with": "com.tencent.mm",
-            "accept-encoding": "gzip, deflate, br, zstd",
-            "accept-language": "zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7",
-            "priority": "u=1, i"
-        };
-        const postData = JSON.stringify({ "channel": "wechat" });
-
-        postInterval = setInterval(() => {
-            fetch(postUrl, {
-                method: 'POST',
-                headers: postHeaders,
-                body: postData
-            })
-            .then(response => response.text())
-            .then(data => {
-                const currentTime = new Date().toLocaleString();
-                const resultText = `POST请求时间: ${currentTime}\n结果: ${data}\n`;
-                document.getElementById('e').value = resultText + document.getElementById('e').value;
-            })
-            .catch(error => console.error('Error executing POST request:', error));
-        }, 200);
-    }
-
-    function stopMonitoring() {
-        clearInterval(monitorInterval);
-        clearInterval(postInterval);
-        postInterval = null; 
-    }
-</script>
-
+        function redirectToMainPage() {
+            window.location.href = 'main.html';
+        }
+    </script>
 </body>
 </html>
