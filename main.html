@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>泡泡码特扫码登录</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 350px;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+            border-radius: 10px;
+        }
+
+        .header {
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .proxy-ip {
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 20px;
+            color: #555;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 5px;
+            flex: 1;
+            margin: 5px;
+            text-align: center;
+        }
+
+        .button:disabled {
+            background-color: #ccc;
+        }
+
+        .button-blue {
+            background-color: #007bff;
+        }
+
+        .button-gray {
+            background-color: #6c757d;
+        }
+
+        .button-green {
+            background-color: #28a745;
+        }
+
+        .button-blue, .button-gray, .button-green {
+            color: #fff;
+        }
+
+        .notice {
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">泡泡码特扫码登录</div>
+    <div class="proxy-ip">当前城市：<b>河南省</b></div>
+
+    <div class="form-group">
+        <label for="phone">手机号</label>
+        <input type="text" id="phone" placeholder="微信号绑定的手机号">
+    </div>
+
+    <div class="form-group buttons">
+        <button class="button button-blue">点申请我授权</button>
+    </div>
+
+    <div class="form-group">
+        <label for="province">省份</label>
+        <select id="province">
+            <option>河南省</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label>自定义账号（用于访问你名下订单账号列表）</label>
+        <input type="text" placeholder="建议手机号+姓名">
+    </div>
+
+    <div class="form-group buttons">
+        <button class="button button-blue">订单</button>
+        <button class="button button-blue">账号</button>
+    </div>
+
+    <div class="form-group">
+        <label for="remarks">备注</label>
+        <input type="text" id="remarks" placeholder="方便你自己识别区分微信账号">
+    </div>
+
+    <div class="form-group">
+        <label for="uid">UID</label>
+        <input type="text" id="uid" placeholder="UID_yIKd3*****UID">
+    </div>
+
+    <div class="form-group buttons">
+        <button class="button button-blue">测试</button>
+        <button class="button button-gray">教程</button>
+    </div>
+
+    <div class="form-group">
+        <label for="bark">Bark 地址</label>
+        <input type="text" id="bark" placeholder="请输入 Bark key">
+    </div>
+
+    <div class="form-group buttons">
+        <button class="button button-blue">测试</button>
+        <button class="button button-gray">教程</button>
+    </div>
+
+    <div class="form-group buttons">
+        <button class="button button-green">新设备登录</button>
+        <button class="button button-blue">原设备登录</button>
+    </div>
+
+    <div class="notice">扫码此处进行登录</div>
+</div>
+
+</body>
+</html>
