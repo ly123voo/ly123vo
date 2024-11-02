@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>泡泡玛特登录</title>
+    <title>泡泡登录</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -115,8 +115,12 @@
             }
             users[username] = password;
             localStorage.setItem('users', JSON.stringify(users));
-            alert('注册成功！');
-            redirectToMainPage();
+            alert('注册成功！请登录');
+            // 重置表单为登录状态
+            isLogin = true;
+            title.textContent = '登录';
+            submitBtn.textContent = '登录';
+            toggleLink.textContent = '没有账号？点击注册';
         }
 
         function login(username, password) {
