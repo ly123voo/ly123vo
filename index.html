@@ -3,139 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>泡泡登录</title>
+    <title>访问次数计数器</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background: linear-gradient(45deg, #ff9a9e 0%, #fad0c4 99%, #fad0c4 100%);
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            margin: 0;
+            background-color: #f0f0f0;
         }
-        .container {
-            background-color: rgba(255, 255, 255, 0.9);
-            border-radius: 10px;
-            box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
-            padding: 40px;
-            width: 300px;
-        }
-        h2 {
+        .counter {
             text-align: center;
-            color: #333;
-        }
-        input {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0;
-            border: none;
-            border-bottom: 2px solid #ddd;
-            background-color: transparent;
-            transition: border-color 0.3s;
-        }
-        input:focus {
-            outline: none;
-            border-color: #ff9a9e;
-        }
-        button {
-            width: 100%;
-            padding: 10px;
-            background-color: #ff9a9e;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #ff8b8b;
-        }
-        .toggle {
-            text-align: center;
-            margin-top: 20px;
-        }
-        .toggle a {
-            color: #ff9a9e;
-            text-decoration: none;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2 id="title">登录</h2>
-        <form id="authForm">
-            <input type="text" id="username" placeholder="用户名" required>
-            <input type="password" id="password" placeholder="密码" required>
-            <button type="submit" id="submitBtn">登录</button>
-        </form>
-        <div class="toggle">
-            <a href="#" id="toggleLink">没有账号？点击注册</a>
-        </div>
+    <div class="counter">
+        <h1>您已访问此页面 <span id="visitCount">0</span> 次</h1>
     </div>
 
     <script>
-        const form = document.getElementById('authForm');
-        const title = document.getElementById('title');
-        const submitBtn = document.getElementById('submitBtn');
-        const toggleLink = document.getElementById('toggleLink');
-        let isLogin = true;
+        // 获取当前的访问次数
+        let visitCount = localStorage.getItem('visitCount');
 
-        toggleLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            isLogin = !isLogin;
-            if (isLogin) {
-                title.textContent = '登录';
-                submitBtn.textContent = '登录';
-                toggleLink.textContent = '没有账号？点击注册';
-            } else {
-                title.textContent = '注册';
-                submitBtn.textContent = '注册';
-                toggleLink.textContent = '已有账号？点击登录';
-            }
-        });
-
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-
-            if (isLogin) {
-                login(username, password);
-            } else {
-                register(username, password);
-            }
-        });
-
-        function register(username, password) {
-            const users = JSON.parse(localStorage.getItem('users')) || {};
-            if (users[username]) {
-                alert('用户名已存在！');
-                return;
-            }
-            users[username] = password;
-            localStorage.setItem('users', JSON.stringify(users));
-            alert('注册成功！请登录');
-            // 重置表单为登录状态
-            isLogin = true;
-            title.textContent = '登录';
-            submitBtn.textContent = '登录';
-            toggleLink.textContent = '没有账号？点击注册';
+        // 如果没有记录访问次数，初始化为0
+        if (!visitCount) {
+            visitCount = 0;
         }
 
-        function login(username, password) {
-            const users = JSON.parse(localStorage.getItem('users')) || {};
-            if (users[username] === password) {
-                alert('登录成功！');
-                redirectToMainPage();
-            } else {
-                alert('用户名或密码错误！');
-            }
-        }
+        // 增加访问次数
+        visitCount++;
 
-        function redirectToMainPage() {
-            window.location.href = 'main.html';
-        }
+        // 更新本地存储的访问次数
+        localStorage.setItem('visitCount', visitCount);
+
+        // 显示访问次数
+        document.getElementById('visitCount').innerText = visitCount;
     </script>
 </body>
 </html>
